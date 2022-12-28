@@ -106,14 +106,21 @@ My asset 클릭 시 총 자산 정보, 현재가 정보를 포함한 asset list 
 ### 4) /updateasset3 [POST]
 매도 API
 
+</br>
 
 ### 5) /discover [POST, GET]
 Today's discover 예측 API
 
+</br>
+
 ### 6) /current [POST]
 현재가 불러오기
 
+</br>
+
 ### 7) /backtest [POST]
 모델, KOSPI or KOSDAQ 선택에 따라 과거 상승이라 예측했던 종목들의 csv파일을 불러와 Backtesting 실행
+
+</br>
 
 
