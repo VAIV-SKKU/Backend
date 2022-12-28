@@ -68,7 +68,9 @@ python demo.py
             └── __pycache__
 ```
 - 서버는 demo.py 로 실행
-- 
+- make_image.py 는 매일 주가 차트 이미지를 생성함.
+- make_prediction.py 는 모델을 불러와 종목의 상승/하락을 예측.
+- predict_csv 폴더에 날짜마다의 종목 상승 예측값이 있음.
 
 
 ## API 설명
