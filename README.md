@@ -3,6 +3,7 @@
 > A simulator that can predict the possible outcomes of inidividual stocks in KOSPI/KOSDAQ
 
 <br />
+<br />
 
 ## Framework
 Flask
