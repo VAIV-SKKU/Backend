@@ -1,6 +1,7 @@
 # Short-term Stock Prediction Simulator - Backend
 <br />
 > A simulator that can predict the possible outcomes of inidividual stocks in KOSPI/KOSDAQ
+
 <br />
 
 ## Framework
@@ -9,7 +10,6 @@ Flask
 <br />
 
 ## Getting Started
-<br />
 
 ### Clone Repository
 ```shell script
