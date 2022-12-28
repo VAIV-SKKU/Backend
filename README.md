@@ -1,4 +1,4 @@
-#Short-term Stock Prediction Simulator - Backend
+## Short-term Stock Prediction Simulator - Backend
 > A simulator that can predict the possible outcomes of inidividual stocks in KOSPI/KOSDAQ
 
 ## Framework
