@@ -137,36 +137,36 @@ Today's discover 예측 API
 </br>
 
 ### How to run
-- 주가 데이터 업데이트
-    - KOSPI 968종목
-        - [Backend/Update-Prediction-Data/src/load_new_data_kospi.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/load_new_data_kospi.py) 사용
++ 주가 데이터 업데이트
+    + KOSPI 968종목
+        + [Backend/Update-Prediction-Data/src/load_new_data_kospi.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/load_new_data_kospi.py) 사용
     ```shell script
     $ nohup python load_new_data_kospi.py &
     ```
-    - KOSDAQ 1,629종목
-        - [Backend/Update-Prediction-Data/src/load_new_data_kosdaq.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/load_new_data_kosdaq.py) 사용
+    + KOSDAQ 1,629종목
+        + [Backend/Update-Prediction-Data/src/load_new_data_kosdaq.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/load_new_data_kosdaq.py) 사용
     ```shell script
     $ nohup python load_new_data_kospi.py &
     ```
 </br>
-- 주가 차트 이미지 생성
-    - image size : 224x224
-    - channel : 3 (RGB)
-    - image features : Open, High, Low, Close (OHLC)
-    - KOSPI 968종목
-        - [Backend/Update-Prediction-Data/src/load_new_data_kospi.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_image_kospi.py) 사용
++ 주가 차트 이미지 생성
+    + image size : 224x224
+    + channel : 3 (RGB)
+    + image features : Open, High, Low, Close (OHLC)
+    + KOSPI 968종목
+        + [Backend/Update-Prediction-Data/src/load_new_data_kospi.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_image_kospi.py) 사용
     ```shell script
     $ nohup python make_image_kospi.py &
     ```
-    - KOSDAQ 1,629종목
-        - [Backend/Update-Prediction-Data/src/make_image_kosdaq.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_image_kosdaq.py) 사용
+    + KOSDAQ 1,629종목
+        + [Backend/Update-Prediction-Data/src/make_image_kosdaq.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_image_kosdaq.py) 사용
     ```shell script
     $ nohup python make_image_kosdaq.py &
     ```
 </br>
-- 생성된 이미지에 대한 모델 예측 결과 업데이트
-    - KOSPI 968종목, KOSDAQ 1,629종목
-        - [Backend/Update-Prediction-Data/src/make_prediction_daily.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_prediction_daily.py), [Backend/Update-Prediction-Data/src/make_prediction_csv.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_prediction_csv.py) 사용
++ 생성된 이미지에 대한 모델 예측 결과 업데이트
+    + KOSPI 968종목, KOSDAQ 1,629종목
+        + [Backend/Update-Prediction-Data/src/make_prediction_daily.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_prediction_daily.py), [Backend/Update-Prediction-Data/src/make_prediction_csv.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_prediction_csv.py) 사용
     ```shell script
     $ nohup python make_prediction_daily.py &
     ```
