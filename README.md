@@ -166,6 +166,7 @@ Today's discover 예측 API
 + 생성된 이미지에 대한 모델 예측 결과 업데이트
     + KOSPI 968종목, KOSDAQ 1,629종목
         + [Backend/Update-Prediction-Data/src/make_prediction_daily.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_prediction_daily.py), [Backend/Update-Prediction-Data/src/make_prediction_csv.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_prediction_csv.py) 사용
+        + [Backend/Update-Prediction-Data/predict_csv/KOSPI](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/predict_csv/KOSPI), [Backend/Update-Prediction-Data/predict_csv/KOSDAQ](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/predict_csv/KOSDAQ) 폴더의 csv 파일 업데이트
     ```shell script
     $ nohup python make_prediction_daily.py &
     ```
