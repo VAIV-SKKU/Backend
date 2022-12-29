@@ -40,7 +40,7 @@ python demo.py
 │   │   └── mobiscroll
 │   ├── predict_newDemo.py
 │   └── stockdata.py
-└── Update-Prediction-Data
+└── Update-Prediction-Data      // 매일 주가 데이터, 모델 예측 결과 업데이트
     ├── predict_csv
     │   ├── KOSDAQ
     │   │   ├── efficient_kosdaq.csv
@@ -124,5 +124,49 @@ Today's discover 예측 API
 모델, KOSPI or KOSDAQ 선택에 따라 과거 상승이라 예측했던 종목들의 csv파일을 불러와 Backtesting 실행
 
 </br>
+</br>
 
+## Update Stock Data and Prediction Results Daily
+> 매일 장 종료 후 사이트에 사용되는 주가 데이터, 모델 예측 결과 업데이트</br>
+> 주가 데이터 업데이트, 이미지 생성, 모델 예측 결과 업데이트 코드는 개별적으로 실행됨
+</br>
+### Updating Data : Pipeline
+```
+오후 3시 30분 장 종료 -> 주가 데이터 업데이트 -> 주가 차트 이미지 생성 -> 모델 예측 결과 업데이트
+```
+</br>
 
+### How to run
+- 주가 데이터 업데이트
+    - KOSPI 968종목
+        - [Backend/Update-Prediction-Data/src/load_new_data_kospi.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/load_new_data_kospi.py) 사용
+    ```shell script
+    $ nohup python load_new_data_kospi.py &
+    ```
+    - KOSDAQ 1,629종목
+        - [Backend/Update-Prediction-Data/src/load_new_data_kosdaq.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/load_new_data_kosdaq.py) 사용
+    ```shell script
+    $ nohup python load_new_data_kospi.py &
+    ```
+</br>
+- 주가 차트 이미지 생성
+    - image size : 224x224
+    - channel : 3 (RGB)
+    - image features : Open, High, Low, Close (OHLC)
+    - KOSPI 968종목
+        - [Backend/Update-Prediction-Data/src/load_new_data_kospi.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_image_kospi.py) 사용
+    ```shell script
+    $ nohup python make_image_kospi.py &
+    ```
+    - KOSDAQ 1,629종목
+        - [Backend/Update-Prediction-Data/src/make_image_kosdaq.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_image_kosdaq.py) 사용
+    ```shell script
+    $ nohup python make_image_kosdaq.py &
+    ```
+</br>
+- 생성된 이미지에 대한 모델 예측 결과 업데이트
+    - KOSPI 968종목, KOSDAQ 1,629종목
+        - [Backend/Update-Prediction-Data/src/make_prediction_daily.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_prediction_daily.py), [Backend/Update-Prediction-Data/src/make_prediction_csv.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_prediction_csv.py) 사용
+    ```shell script
+    $ nohup python make_prediction_daily.py &
+    ```
