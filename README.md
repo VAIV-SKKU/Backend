@@ -148,7 +148,7 @@ Today's discover 예측 API
     ```shell script
     $ nohup python load_new_data_kospi.py &
     ```
-</br>
+    
 + 주가 차트 이미지 생성
     + image size : 224x224
     + channel : 3 (RGB)
@@ -163,7 +163,6 @@ Today's discover 예측 API
     ```shell script
     $ nohup python make_image_kosdaq.py &
     ```
-</br>
 + 생성된 이미지에 대한 모델 예측 결과 업데이트
     + KOSPI 968종목, KOSDAQ 1,629종목
         + [Backend/Update-Prediction-Data/src/make_prediction_daily.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_prediction_daily.py), [Backend/Update-Prediction-Data/src/make_prediction_csv.py](https://github.com/VAIV-SKKU/Backend/blob/main/Update-Prediction-Data/src/make_prediction_csv.py) 사용
