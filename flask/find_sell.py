@@ -16,6 +16,7 @@ import sys
 p = Path.absolute(Path.cwd().parent.parent)
 sys.path.append(str(p))
 
+from Data.stock import Stock, StockMarket
 from Data.candlestick import GetName, YoloChart
 sys.path.append(str(p / 'YOLO-Train'))
 from detect import detect_light, select_device, attempt_load
@@ -37,14 +38,13 @@ def default_config():
         'MACD': [0, 0, 0],
     }
 
-    # name = GetName(root= p / 'Data', **config_dict)
-    # print(name)
     return config_dict
 
 
 def default_opt():
+    global weights
     opt = {
-        'weights': str(Path.cwd().parent / 'YOLO-Train/runs/train/yolov7ALL-2006-2017train/weights/best.pt'),
+        'weights': weights,
         'conf_thres': 0.6,
         'device': '0',
         'model': model,
@@ -55,11 +55,10 @@ def default_opt():
     return opt
 
 
-def copy_image(tickers, last_date, market, config):
+def copy_image(tickers, last_date, chart: YoloChart):
     global p
     source = Path.cwd() / 'static' / 'today'
     source.mkdir(parents=True, exist_ok=True)
-    chart = YoloChart(market=market, root= p / 'Data', **config)
 
     notFound = {}
     for ticker in (tickers):
@@ -76,28 +75,24 @@ def copy_image(tickers, last_date, market, config):
 
 
 def detect_list(tickers, last_date, market='Kospi'):
-    vaiv = default_vaiv()
-    vaiv.set_kwargs(market=market)
-    vaiv.set_stock()
-    vaiv.set_prediction()
-    vaiv.set_image()
-    vaiv.set_labeling()
-    opt = default_opt(vaiv)
-    opt['weights'] = '/home/ubuntu/2022_VAIV_JSPARK/YOLOv7/yolov7/runs/train/yolov7-Kospi50P_5_3/weights/best.pt'
+    global weights
+    config = default_config()
+    name = GetName(root= p / 'Data', **config)
+    chart = YoloChart(market=market, name=name, exist_ok=True, root= p / 'Data', **config)
+    opt = default_opt()
+    opt['weights'] = weights
     sell_tickers = {}
-    source = Path('/home/ubuntu/2022_VAIV_Dataset/flask/static/today/')
-    save_dir = Path('/home/ubuntu/2022_VAIV_Dataset/flask/static/predict/')
+    source = Path.cwd() / 'static' / 'today'
+    save_dir = Path.cwd() / 'static' / 'predict'
     source.mkdir(parents=True, exist_ok=True)
 
     notFound = {}
     files = []
     for ticker in (tickers):
-        vaiv.set_fname('png', ticker=ticker, last_date=last_date)
-        vaiv.set_path(vaiv.common.image.get('images'))
-        img = str(vaiv.path)
+        img = chart.load_chart_path(ticker, last_date)
 
-        if vaiv.path.exists():
-            files.append(img)
+        if img.exists():
+            files.append(str(img))
         else:
             notFound.update({ticker: ['FileNotFoundError', 0, '', '']})
         # try:
@@ -127,14 +122,14 @@ def detect_list(tickers, last_date, market='Kospi'):
     ret = {t: [s, p, start, end] for t, s, p, start, end in zip(tickers, signals, probs, starts, ends)}
     ret.update(notFound)
     try:
-        shutil.rmtree('/home/ubuntu/2022_VAIV_Dataset/flask/static/today')
+        shutil.rmtree(str(source))
     except FileNotFoundError:
         pass
     return ret
 
 
 def detect_all():
-    df = pd.read_csv('/home/ubuntu/2022_VAIV_Dataset/flask/static/Stock.csv', index_col=0)
+    df = pd.read_csv(Path.cwd() / 'static' / 'Stock.csv', index_col=0)
     kospiTickers = df[df['Market'] == 'STK'].index.tolist()
     kosdaqTickers = df[df['Market'] == 'KSQ'].index.tolist()
 
@@ -178,18 +173,16 @@ def detect_all():
 
 
 def detect_MarketFiles(last_date, market):
-    vaiv = default_vaiv()
-    vaiv.set_kwargs(market=market)
-    vaiv.set_stock()
-    vaiv.set_prediction()
-    vaiv.set_image()
-    vaiv.set_labeling()
-    opt = default_opt(vaiv)
-    filesPath = vaiv.common.image.get('images')
+    global weights
+    config = default_config()
+    name = GetName(root= p / 'Data', **config)
+    chart = YoloChart(market=market, name=name, exist_ok=True, root= p / 'Data', **config)
+    opt = default_opt()
+    filesPath = chart.path / 'images'
     # fileDetectStart = time.time()
     files = list(map(str, filesPath.glob(f'*{last_date}.png')))
     # print('FileTime: ', time.time() - fileDetectStart)
-    opt['weights'] = '/home/ubuntu/2022_VAIV_JSPARK/YOLOv7/yolov7/runs/train/yolov7-Kospi50P_5_3/weights/best.pt'
+    opt['weights'] = weights
     df = detect_light(**opt, files=files)
     tickers = df.Ticker.tolist()
     probs = df.Probability.tolist()
@@ -240,10 +233,10 @@ def detectAllFiles():
     detect.to_csv('./static/Detection.csv')
 
 
-def make_process(vaiv, ticker, last_date, result_dict):
-    vaiv.set_kwargs(ticker=ticker)
-    vaiv.set_kwargs(last_date=last_date)
-    stock = make_stock(vaiv, end=last_date, save=False)
+def make_process(chart: YoloChart, ticker, last_date, result_dict):
+    global p
+    stock = Stock(ticker, root=p).load_data()
+    stock = stock[stock.index <= last_date]
 
     condition1 = len(stock) > vaiv.kwargs.get('candle')
     condition2 = last_date in stock.index
@@ -251,90 +244,82 @@ def make_process(vaiv, ticker, last_date, result_dict):
         start = stock.index[-245]
         pred = pd.Series({'Start': start, 'End': last_date, 'Date': last_date})
         result_dict['price'][ticker] = stock.loc[last_date, 'Close']
-        make_candlestick(vaiv, stock, pred)
+        chart.make_chart(ticker, last_date, pixel=True)
         result_dict['files'].append(str(vaiv.common.image.get('images') / f'{ticker}_{last_date}.png'))
     else:
         result_dict['notFound'].update({ticker: ['FileNotFoundError', 0, 0, '', '']})
 
 
-def detect_Test(tickers, last_date, market):
-    s1 = time.time()
-    source = Path('/home/ubuntu/2022_VAIV_Dataset/flask/static/RealTime/')
-    source.mkdir(parents=True, exist_ok=True)
-    save_dir = Path('/home/ubuntu/2022_VAIV_Dataset/flask/static/predict/')
-    vaiv = default_vaiv()
-    vaiv.set_kwargs(market=market)
-    vaiv.set_stock()
-    vaiv.set_prediction()
-    vaiv.set_image(source)
-    vaiv.make_dir(common=True, image=True)
-    vaiv.set_labeling()
-    opt = default_opt(vaiv)
-    opt['weights'] = '/home/ubuntu/2022_VAIV_JSPARK/YOLOv7/yolov7/runs/train/yolov7-Kospi50P_5_3/weights/best.pt'
+# def detect_Test(tickers, last_date, market):
+#     s1 = time.time()
+#     source = Path('/home/ubuntu/2022_VAIV_Dataset/flask/static/RealTime/')
+#     source.mkdir(parents=True, exist_ok=True)
+#     save_dir = Path('/home/ubuntu/2022_VAIV_Dataset/flask/static/predict/')
+#     vaiv = default_vaiv()
+#     vaiv.set_kwargs(market=market)
+#     vaiv.set_stock()
+#     vaiv.set_prediction()
+#     vaiv.set_image(source)
+#     vaiv.make_dir(common=True, image=True)
+#     vaiv.set_labeling()
+#     opt = default_opt()
+#     opt['weights'] = '/home/ubuntu/2022_VAIV_JSPARK/YOLOv7/yolov7/runs/train/yolov7-Kospi50P_5_3/weights/best.pt'
 
-    manager = mp.Manager()
-    result_dict = manager.dict()
-    result_dict['notFound'] = manager.dict()
-    result_dict['price'] = manager.dict()
-    result_dict['files'] = manager.list()
-    e1 = time.time()
-    readyT = e1-s1
+#     manager = mp.Manager()
+#     result_dict = manager.dict()
+#     result_dict['notFound'] = manager.dict()
+#     result_dict['price'] = manager.dict()
+#     result_dict['files'] = manager.list()
+#     e1 = time.time()
+#     readyT = e1-s1
 
-    jobs = []
-    s2 = time.time()
-    for ticker in tickers:
-        p = mp.Process(target=make_process, args=(vaiv, ticker, last_date, result_dict))
-        jobs.append(p)
-        p.start()
+#     jobs = []
+#     s2 = time.time()
+#     for ticker in tickers:
+#         p = mp.Process(target=make_process, args=(vaiv, ticker, last_date, result_dict))
+#         jobs.append(p)
+#         p.start()
 
-    for proc in jobs:
-        proc.join()
-    e2 = time.time()
-    makeT = e2 - s2
+#     for proc in jobs:
+#         proc.join()
+#     e2 = time.time()
+#     makeT = e2 - s2
 
-    s4 = time.time()
-    if len(tickers) == len(result_dict['notFound']):
-        return result_dict['notFound']
-    df = detect_light(**opt, source=vaiv.common.image.get('images'), save_dir=save_dir, files=result_dict['files'])
-    e4 = time.time()
+#     s4 = time.time()
+#     if len(tickers) == len(result_dict['notFound']):
+#         return result_dict['notFound']
+#     df = detect_light(**opt, source=vaiv.common.image.get('images'), save_dir=save_dir, files=result_dict['files'])
+#     e4 = time.time()
 
-    detectT = e4-s4
+#     detectT = e4-s4
 
-    s5 = time.time()
-    tickers = df.Ticker.tolist()
-    probs = df.Probability.tolist()
-    signals = df.Signal.tolist()
-    starts = df.Start.tolist()
-    ends = df.End.tolist()
-    ret = {t: [s, p, int(result_dict['price'][t]), start, end] for t, s, p, start, end in zip(tickers, signals, probs, starts, ends)}
-    ret.update(result_dict['notFound'])
+#     s5 = time.time()
+#     tickers = df.Ticker.tolist()
+#     probs = df.Probability.tolist()
+#     signals = df.Signal.tolist()
+#     starts = df.Start.tolist()
+#     ends = df.End.tolist()
+#     ret = {t: [s, p, int(result_dict['price'][t]), start, end] for t, s, p, start, end in zip(tickers, signals, probs, starts, ends)}
+#     ret.update(result_dict['notFound'])
 
-    e5 = time.time()
-    returnT = e5 - s5
+#     e5 = time.time()
+#     returnT = e5 - s5
 
-    print('Times: ', [readyT, makeT, detectT, returnT])
-    return ret
+#     print('Times: ', [readyT, makeT, detectT, returnT])
+#     return ret
 
 
 def detect_first(tickers, last_date, market):
-    s1 = time.time()
-    source = Path('/home/ubuntu/2022_VAIV_Dataset/flask/static/RealTime/')
-    source.mkdir(parents=True, exist_ok=True)
-    save_dir = Path('/home/ubuntu/2022_VAIV_Dataset/flask/static/predict/')
-    vaiv = default_vaiv()
-    vaiv.set_kwargs(market=market)
-    vaiv.set_stock()
-    vaiv.set_prediction()
-    vaiv.set_image(source)
-    vaiv.make_dir(common=True, image=True)
-    vaiv.set_labeling()
-    opt = default_opt(vaiv)
-    opt['weights'] = '/home/ubuntu/2022_VAIV_JSPARK/YOLOv7/yolov7/runs/train/yolov7-Kospi50P_5_3/weights/best.pt'
+    global weights, p
+    config = default_config()
+    chart = YoloChart(market=market, name='RealTime', exist_ok=True, root=(Path.cwd() / 'static'), **config)
+    save_dir = Path.cwd() / 'static' / 'predict'
+    opt = default_opt()
+    opt['weights'] = weights
 
     notFound = {}
-    e1 = time.time()
+    # e1 = time.time()
     # print(f'Ready: {round(e1-s1, 4)}s')
-    readyT = e1-s1
 
     stock_t = 0
     candle_t = 0
@@ -344,34 +329,20 @@ def detect_first(tickers, last_date, market):
 
     jobs = []
     for ticker in tickers:
-        s2 = time.time()
-        vaiv.set_kwargs(ticker=ticker)
-        vaiv.set_kwargs(last_date=last_date)
-        stock = make_stock(vaiv, end=last_date, save=False)
-        e2 = time.time()
-        stock_t += e2 - s2
-
-        s3 = time.time()
-        condition1 = len(stock) > vaiv.kwargs.get('candle')
-        condition2 = last_date in stock.index
-        # if condition1 & condition2:
-        if condition1:
-            start = stock.index[-245]
-            last_date = stock.index[-1]  # 임시
-            vaiv.set_kwargs(last_date=last_date)  # 임시
-            pred = pd.Series({'Start': start, 'End': last_date, 'Date': last_date})
-            price[ticker] = stock.loc[last_date, 'Close']
-            # make_candlestick(vaiv, stock, pred)
-            p = mp.Process(target=make_candlestick, args=(vaiv, stock, pred, ))
-            jobs.append(p)
-            p.start()
-            files.append(str(vaiv.common.image.get('images') / f'{ticker}_{last_date}.png'))
+        # s2 = time.time()
+        stock = Stock(ticker, market=market, root= p / 'Data')
+        stock.update_data()
+        p = mp.Process(target=chart.make_chart, args=(ticker, last_date, ))
+        jobs.append(p)
+        p.start()
+        if chart.load_chart_path(ticker, last_date).exists():
+            files.append(chart.load_chart_path(ticker, last_date))
         else:
             notFound.update({ticker: ['FileNotFoundError', 0, 0, '', '']})
             ticker_count -= 1
+        # e2 = time.time()
+        # stock_t += e2 - s2
 
-        e3 = time.time()
-        candle_t += e3 - s3
     for proc in jobs:
         proc.join()
     # print(f'{ticker_count}/{len(tickers)} Total Stock: {round(stock_t, 2)}s')
@@ -383,13 +354,13 @@ def detect_first(tickers, last_date, market):
     if len(tickers) == len(notFound):
         return notFound
         # return notFound, [0, 0, 0, 0, 0]
-    df = detect_light(**opt, source=vaiv.common.image.get('images'), save_dir=save_dir, files=files)
-    e4 = time.time()
+    df = detect_light(**opt, save_dir=save_dir, files=files)
+    # e4 = time.time()
     # print(f'Tickers Detect: {round(e4-s4, 2)}s')
     # print(f'{ticker_count}/{len(tickers)} Tickers Detect: {round(e4-s4, 2)}s')
-    detectT = e4-s4
+    # detectT = e4-s4
 
-    s5 = time.time()
+    # s5 = time.time()
     tickers = df.Ticker.tolist()
     probs = df.Probability.tolist()
     signals = df.Signal.tolist()
@@ -403,31 +374,24 @@ def detect_first(tickers, last_date, market):
     # except FileNotFoundError:
     #     pass
 
-    e5 = time.time()
+    # e5 = time.time()
     # print(f'{len(tickers)} Tickers Return: {round(e5 - s5, 4)}s')
-    returnT = e5 - s5
-    print('Times: ', [readyT, stock_t, candle_t, detectT, returnT])
+    # returnT = e5 - s5
+    # print('Times: ', [readyT, stock_t, candle_t, detectT, returnT])
     return ret
     # return ret, [readyT, stock_t, candle_t, detectT, returnT]
 
 
 if __name__ == '__main__':
-    # detectAllFiles()
-    # detect_all()
+    tickers = StockMarket(market='Kospi').tickers
 
-    vaiv = default_vaiv()
-    market = vaiv.kwargs.get('market')
-    vaiv.load_df(market)
-    df = vaiv.modedf.get(market).reset_index()
-    tickers = df.Ticker.tolist()[:40]
-
-    s0 = time.time()
+    # s0 = time.time()
     # tickers = ['005930', '000020', '095570', '006840', '039570']
     # tickers = ['006390']
-    ret = detect_Test(tickers=tickers, last_date='2022-12-13', market='Kospi')
-    e0 = time.time()
-    print(ret)
-    print(f'{len(tickers)} Tickers Total: {round(e0-s0, 2)}s')
+    ret = detect_first(tickers=tickers, last_date='2022-12-13', market='Kospi')
+    # e0 = time.time()
+    # print(ret)
+    # print(f'{len(tickers)} Tickers Total: {round(e0-s0, 2)}s')
 
     # totalT = 0
     # AvgTimes = [0, 0, 0, 0, 0]
