@@ -21,9 +21,10 @@ from Data.candlestick import GetName, YoloChart
 sys.path.append(str(p / 'YOLO-Train'))
 from detect import detect_light, select_device, attempt_load
 
+
 device = '0'
 device = select_device(device)
-weights = str(Path.cwd().parent / 'YOLO-Train/runs/train/yolov7ALL-2006-2017train/weights/best.pt')
+weights = str(p / 'YOLO-Train/runs/train/yolov7ALL-2006-2017train/weights/best.pt')
 model = attempt_load(weights, map_location=device)
 
 def default_config():
@@ -128,189 +129,10 @@ def detect_list(tickers, last_date, market='Kospi'):
     return ret
 
 
-def detect_all():
-    df = pd.read_csv(Path.cwd() / 'static' / 'Stock.csv', index_col=0)
-    kospiTickers = df[df['Market'] == 'STK'].index.tolist()
-    kosdaqTickers = df[df['Market'] == 'KSQ'].index.tolist()
-
-    today = datetime.today()
-    yesterday = today - timedelta(1)
-    yesterday = yesterday.strftime('%Y-%m-%d')
-    XKRX = xcals.get_calendar("XKRX")
-    last_date = XKRX.next_session(yesterday).strftime('%Y-%m-%d')
-
-    # p = Process(detect_list, args=(kospiTickers, last_date, 'Kospi', ))
-    Detection = dict()
-    start = time.time()
-    kospiDict = detect_first(kospiTickers, last_date, 'Kospi')
-    # print('Kospi_Dict: ', kospiDict)
-    kospiT = time.time()
-    kosdaqDict = detect_first(kosdaqTickers, last_date, 'Kosdaq')
-    kosdaqT = time.time()
-
-    Detection.update(kospiDict)
-    Detection.update(kosdaqDict)
-
-    stock_list = list()
-    for ticker, value in Detection.items():
-        stock = pd.DataFrame({
-            'Ticker': [ticker],
-            'FullCode': [df.FullCode.loc[ticker]],
-            'Symbol': [df.Symbol.loc[ticker]],
-            'Signal': [value[0]],
-            'Probability': [value[1]],
-            'Start': [value[2]],
-            'End': [value[3]],
-        })
-        stock.set_index('Ticker', drop=True, inplace=True)
-        stock_list.append(stock)
-    end = time.time()
-    print('Kospi Time: ', kospiT - start)
-    print('Kosdaq Time: ', kosdaqT - kospiT)
-    print('After Detect Time: ', end - kosdaqT)
-    detect = pd.concat(stock_list)
-    detect.to_csv('./static/Detection.csv')
-
-
-def detect_MarketFiles(last_date, market):
-    global weights
-    config = default_config()
-    name = GetName(root= p / 'Data', **config)
-    chart = YoloChart(market=market, name=name, exist_ok=True, root= p / 'Data', **config)
-    opt = default_opt()
-    filesPath = chart.path / 'images'
-    # fileDetectStart = time.time()
-    files = list(map(str, filesPath.glob(f'*{last_date}.png')))
-    # print('FileTime: ', time.time() - fileDetectStart)
-    opt['weights'] = weights
-    df = detect_light(**opt, files=files)
-    tickers = df.Ticker.tolist()
-    probs = df.Probability.tolist()
-    signals = df.Signal.tolist()
-    starts = df.Start.tolist()
-    ends = df.End.tolist()
-    ret = {t: [s, p, start, end] for t, s, p, start, end in zip(tickers, signals, probs, starts, ends)}
-    return ret
-
-
-# def detectAllFiles():
-#     df = pd.read_csv('/home/ubuntu/2022_VAIV_Dataset/flask/static/Stock.csv', index_col=0)
-
-#     today = datetime.today()
-#     yesterday = today - timedelta(1)
-#     yesterday = yesterday.strftime('%Y-%m-%d')
-#     XKRX = xcals.get_calendar("XKRX")
-#     last_date = XKRX.next_session(yesterday).strftime('%Y-%m-%d')
-
-#     Detection = dict()
-#     start = time.time()
-#     kospiDict = detect_MarketFiles(last_date, 'Kospi')
-#     # print('Kospi_Dict: ', kospiDict)
-#     kospiT = time.time()
-#     kosdaqDict = detect_MarketFiles(last_date, 'Kosdaq')
-#     kosdaqT = time.time()
-#     Detection.update(kospiDict)
-#     Detection.update(kosdaqDict)
-
-#     stock_list = list()
-#     for ticker, value in Detection.items():
-#         stock = pd.DataFrame({
-#             'Ticker': [ticker],
-#             'FullCode': [df.FullCode.loc[ticker]],
-#             'Symbol': [df.Symbol.loc[ticker]],
-#             'Signal': [value[0]],
-#             'Probability': [value[1]],
-#             'Start': [value[2]],
-#             'End': [value[3]],
-#         })
-#         stock.set_index('Ticker', drop=True, inplace=True)
-#         stock_list.append(stock)
-#     end = time.time()
-#     print('Kospi Time: ', kospiT - start)
-#     print('Kosdaq Time: ', kosdaqT - kospiT)
-#     print('After Detect Time: ', end - kosdaqT)
-#     detect = pd.concat(stock_list)
-#     detect.to_csv('./static/Detection.csv')
-
-
-# def make_process(chart: YoloChart, ticker, last_date, result_dict):
-#     global p
-#     stock = Stock(ticker, root=p).load_data()
-#     stock = stock[stock.index <= last_date]
-
-#     condition1 = len(stock) > vaiv.kwargs.get('candle')
-#     condition2 = last_date in stock.index
-#     if condition1 & condition2:
-#         start = stock.index[-245]
-#         pred = pd.Series({'Start': start, 'End': last_date, 'Date': last_date})
-#         result_dict['price'][ticker] = stock.loc[last_date, 'Close']
-#         chart.make_chart(ticker, last_date, pixel=True)
-#         result_dict['files'].append(str(vaiv.common.image.get('images') / f'{ticker}_{last_date}.png'))
-#     else:
-#         result_dict['notFound'].update({ticker: ['FileNotFoundError', 0, 0, '', '']})
-
-
-# def detect_Test(tickers, last_date, market):
-#     s1 = time.time()
-#     source = Path('/home/ubuntu/2022_VAIV_Dataset/flask/static/RealTime/')
-#     source.mkdir(parents=True, exist_ok=True)
-#     save_dir = Path('/home/ubuntu/2022_VAIV_Dataset/flask/static/predict/')
-#     vaiv = default_vaiv()
-#     vaiv.set_kwargs(market=market)
-#     vaiv.set_stock()
-#     vaiv.set_prediction()
-#     vaiv.set_image(source)
-#     vaiv.make_dir(common=True, image=True)
-#     vaiv.set_labeling()
-#     opt = default_opt()
-#     opt['weights'] = '/home/ubuntu/2022_VAIV_JSPARK/YOLOv7/yolov7/runs/train/yolov7-Kospi50P_5_3/weights/best.pt'
-
-#     manager = mp.Manager()
-#     result_dict = manager.dict()
-#     result_dict['notFound'] = manager.dict()
-#     result_dict['price'] = manager.dict()
-#     result_dict['files'] = manager.list()
-#     e1 = time.time()
-#     readyT = e1-s1
-
-#     jobs = []
-#     s2 = time.time()
-#     for ticker in tickers:
-#         p = mp.Process(target=make_process, args=(vaiv, ticker, last_date, result_dict))
-#         jobs.append(p)
-#         p.start()
-
-#     for proc in jobs:
-#         proc.join()
-#     e2 = time.time()
-#     makeT = e2 - s2
-
-#     s4 = time.time()
-#     if len(tickers) == len(result_dict['notFound']):
-#         return result_dict['notFound']
-#     df = detect_light(**opt, source=vaiv.common.image.get('images'), save_dir=save_dir, files=result_dict['files'])
-#     e4 = time.time()
-
-#     detectT = e4-s4
-
-#     s5 = time.time()
-#     tickers = df.Ticker.tolist()
-#     probs = df.Probability.tolist()
-#     signals = df.Signal.tolist()
-#     starts = df.Start.tolist()
-#     ends = df.End.tolist()
-#     ret = {t: [s, p, int(result_dict['price'][t]), start, end] for t, s, p, start, end in zip(tickers, signals, probs, starts, ends)}
-#     ret.update(result_dict['notFound'])
-
-#     e5 = time.time()
-#     returnT = e5 - s5
-
-#     print('Times: ', [readyT, makeT, detectT, returnT])
-#     return ret
-
 
 def detect_first(tickers, last_date, market):
     global weights, p
+    root = p
     config = default_config()
     chart = YoloChart(market=market, name='RealTime', exist_ok=True, root=(Path.cwd() / 'static'), **config)
     save_dir = Path.cwd() / 'static' / 'predict'
@@ -330,9 +152,9 @@ def detect_first(tickers, last_date, market):
     jobs = []
     for ticker in tickers:
         # s2 = time.time()
-        stock = Stock(ticker, market=market, root= p / 'Data')
-        stock.update_data()
-        p = mp.Process(target=chart.make_chart, args=(ticker, last_date, ))
+        stock = Stock(ticker, market=market, root=(root / 'Data'))
+        data = stock.download_data()
+        p = mp.Process(target=chart.make_chart, args=(ticker, last_date, True, data,  ))
         jobs.append(p)
         p.start()
         if chart.load_chart_path(ticker, last_date).exists():
@@ -388,7 +210,7 @@ if __name__ == '__main__':
     # s0 = time.time()
     # tickers = ['005930', '000020', '095570', '006840', '039570']
     # tickers = ['006390']
-    ret = detect_first(tickers=tickers, last_date='2022-12-13', market='Kospi')
+    ret = detect_first(tickers=tickers[:20], last_date='2022-12-13', market='Kospi')
     # e0 = time.time()
     # print(ret)
     # print(f'{len(tickers)} Tickers Total: {round(e0-s0, 2)}s')
