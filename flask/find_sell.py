@@ -193,61 +193,61 @@ def detect_MarketFiles(last_date, market):
     return ret
 
 
-def detectAllFiles():
-    df = pd.read_csv('/home/ubuntu/2022_VAIV_Dataset/flask/static/Stock.csv', index_col=0)
+# def detectAllFiles():
+#     df = pd.read_csv('/home/ubuntu/2022_VAIV_Dataset/flask/static/Stock.csv', index_col=0)
 
-    today = datetime.today()
-    yesterday = today - timedelta(1)
-    yesterday = yesterday.strftime('%Y-%m-%d')
-    XKRX = xcals.get_calendar("XKRX")
-    last_date = XKRX.next_session(yesterday).strftime('%Y-%m-%d')
+#     today = datetime.today()
+#     yesterday = today - timedelta(1)
+#     yesterday = yesterday.strftime('%Y-%m-%d')
+#     XKRX = xcals.get_calendar("XKRX")
+#     last_date = XKRX.next_session(yesterday).strftime('%Y-%m-%d')
 
-    Detection = dict()
-    start = time.time()
-    kospiDict = detect_MarketFiles(last_date, 'Kospi')
-    # print('Kospi_Dict: ', kospiDict)
-    kospiT = time.time()
-    kosdaqDict = detect_MarketFiles(last_date, 'Kosdaq')
-    kosdaqT = time.time()
-    Detection.update(kospiDict)
-    Detection.update(kosdaqDict)
+#     Detection = dict()
+#     start = time.time()
+#     kospiDict = detect_MarketFiles(last_date, 'Kospi')
+#     # print('Kospi_Dict: ', kospiDict)
+#     kospiT = time.time()
+#     kosdaqDict = detect_MarketFiles(last_date, 'Kosdaq')
+#     kosdaqT = time.time()
+#     Detection.update(kospiDict)
+#     Detection.update(kosdaqDict)
 
-    stock_list = list()
-    for ticker, value in Detection.items():
-        stock = pd.DataFrame({
-            'Ticker': [ticker],
-            'FullCode': [df.FullCode.loc[ticker]],
-            'Symbol': [df.Symbol.loc[ticker]],
-            'Signal': [value[0]],
-            'Probability': [value[1]],
-            'Start': [value[2]],
-            'End': [value[3]],
-        })
-        stock.set_index('Ticker', drop=True, inplace=True)
-        stock_list.append(stock)
-    end = time.time()
-    print('Kospi Time: ', kospiT - start)
-    print('Kosdaq Time: ', kosdaqT - kospiT)
-    print('After Detect Time: ', end - kosdaqT)
-    detect = pd.concat(stock_list)
-    detect.to_csv('./static/Detection.csv')
+#     stock_list = list()
+#     for ticker, value in Detection.items():
+#         stock = pd.DataFrame({
+#             'Ticker': [ticker],
+#             'FullCode': [df.FullCode.loc[ticker]],
+#             'Symbol': [df.Symbol.loc[ticker]],
+#             'Signal': [value[0]],
+#             'Probability': [value[1]],
+#             'Start': [value[2]],
+#             'End': [value[3]],
+#         })
+#         stock.set_index('Ticker', drop=True, inplace=True)
+#         stock_list.append(stock)
+#     end = time.time()
+#     print('Kospi Time: ', kospiT - start)
+#     print('Kosdaq Time: ', kosdaqT - kospiT)
+#     print('After Detect Time: ', end - kosdaqT)
+#     detect = pd.concat(stock_list)
+#     detect.to_csv('./static/Detection.csv')
 
 
-def make_process(chart: YoloChart, ticker, last_date, result_dict):
-    global p
-    stock = Stock(ticker, root=p).load_data()
-    stock = stock[stock.index <= last_date]
+# def make_process(chart: YoloChart, ticker, last_date, result_dict):
+#     global p
+#     stock = Stock(ticker, root=p).load_data()
+#     stock = stock[stock.index <= last_date]
 
-    condition1 = len(stock) > vaiv.kwargs.get('candle')
-    condition2 = last_date in stock.index
-    if condition1 & condition2:
-        start = stock.index[-245]
-        pred = pd.Series({'Start': start, 'End': last_date, 'Date': last_date})
-        result_dict['price'][ticker] = stock.loc[last_date, 'Close']
-        chart.make_chart(ticker, last_date, pixel=True)
-        result_dict['files'].append(str(vaiv.common.image.get('images') / f'{ticker}_{last_date}.png'))
-    else:
-        result_dict['notFound'].update({ticker: ['FileNotFoundError', 0, 0, '', '']})
+#     condition1 = len(stock) > vaiv.kwargs.get('candle')
+#     condition2 = last_date in stock.index
+#     if condition1 & condition2:
+#         start = stock.index[-245]
+#         pred = pd.Series({'Start': start, 'End': last_date, 'Date': last_date})
+#         result_dict['price'][ticker] = stock.loc[last_date, 'Close']
+#         chart.make_chart(ticker, last_date, pixel=True)
+#         result_dict['files'].append(str(vaiv.common.image.get('images') / f'{ticker}_{last_date}.png'))
+#     else:
+#         result_dict['notFound'].update({ticker: ['FileNotFoundError', 0, 0, '', '']})
 
 
 # def detect_Test(tickers, last_date, market):
