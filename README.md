@@ -27,7 +27,7 @@ python demo.py
 ## 파일 구조
 
 ```
-.
+.  // Data, Yolo-Train Repository가 같은 위치에 있어야 함
 ├── flask
 │   ├── autotrading.py
 │   ├── backtesting.py
